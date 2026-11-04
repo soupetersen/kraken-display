@@ -4,19 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kraken Display</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700&display=swap">
 <style>
   :root {
     --cpu: #38bdf8;
     --gpu: #a78bfa;
     --ram: #34d399;
-    --track: rgba(255,255,255,0.07);
-    --text: #f1f5f9;
-    --muted: #64748b;
+    --track: rgba(255,255,255,0.08);
+    --text: #ffffff;
+    --muted: #ffffff;
+    --font: Oxanium, Bahnschrift, "Segoe UI", system-ui, sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
   body {
-    font-family: Bahnschrift, "Segoe UI", system-ui, sans-serif;
+    font-family: var(--font);
     color: var(--text);
     font-variant-numeric: tabular-nums;
   }
@@ -30,56 +33,47 @@
     border-radius: 50%;
     box-shadow: 0 0 0 14px #1d2127, 0 0 0 16px #2a2f37, 0 20px 60px rgba(0,0,0,.6);
   }
+  text { font-family: var(--font); }
   .arc { fill: none; stroke-linecap: round; transition: stroke-dasharray .9s ease; }
   .track { fill: none; stroke: var(--track); stroke-linecap: round; }
-  .label { font-size: 30px; font-weight: 600; letter-spacing: .18em; text-anchor: middle; }
-  .temp { font-size: 128px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
-  .deg { font-size: 56px; font-weight: 400; }
-  .value { font-size: 44px; font-weight: 600; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
-  .sub { font-size: 18px; letter-spacing: .2em; text-anchor: middle; fill: var(--muted); }
+  .label { font-size: 38px; font-weight: 700; fill: var(--text); letter-spacing: .14em; text-anchor: middle; }
+  .temp { font-size: 150px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
+  .deg { font-size: 46px; font-weight: 500; }
+  .value { font-size: 58px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
+  .sub { font-size: 22px; font-weight: 600; letter-spacing: .18em; text-anchor: middle; fill: var(--muted); }
   #ramBar { transition: width .9s ease; }
 </style>
 </head>
 <body>
 <svg id="screen" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#0f1724"/>
-      <stop offset="100%" stop-color="#000"/>
-    </radialGradient>
-    <linearGradient id="ramGrad" x1="0" x2="1">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#6ee7b7"/>
-    </linearGradient>
-  </defs>
-  <rect width="640" height="640" fill="url(#bg)"/>
+  <rect width="640" height="640" fill="#000"/>
 
-  <path id="cpuTrack" class="track" stroke-width="22"/>
-  <path id="gpuTrack" class="track" stroke-width="22"/>
-  <path id="cpuArc" class="arc" stroke="var(--cpu)" stroke-width="22" pathLength="100" stroke-dasharray="0 100"/>
-  <path id="gpuArc" class="arc" stroke="var(--gpu)" stroke-width="22" pathLength="100" stroke-dasharray="0 100"/>
+  <path id="cpuTrack" class="track" stroke-width="26"/>
+  <path id="gpuTrack" class="track" stroke-width="26"/>
+  <path id="cpuArc" class="arc" stroke="var(--cpu)" stroke-width="26" pathLength="100" stroke-dasharray="0 100"/>
+  <path id="gpuArc" class="arc" stroke="var(--gpu)" stroke-width="26" pathLength="100" stroke-dasharray="0 100"/>
 
-  <path d="M 254 88 C 254 88 245 99 245 105 A 9 9 0 0 0 263 105 C 263 99 254 88 254 88 Z" fill="#94a3b8"/>
-  <text x="326" y="108" class="sub" fill="#94a3b8" style="fill:#94a3b8">LÍQUIDO</text>
-  <text x="320" y="154" class="value" id="liqTemp" style="font-size:46px">--°</text>
+  <path d="M 232 80 C 232 80 222 93 222 100 A 10 10 0 0 0 242 100 C 242 93 232 80 232 80 Z" fill="var(--muted)"/>
+  <text x="330" y="104" class="sub">LÍQUIDO</text>
+  <text x="320" y="164" class="value" id="liqTemp">--°</text>
 
-  <line x1="320" y1="190" x2="320" y2="395" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <line x1="320" y1="200" x2="320" y2="440" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
 
-  <text x="208" y="205" class="label" fill="var(--cpu)">CPU</text>
-  <text x="208" y="322" class="temp" id="cpuTemp">--<tspan class="deg" dy="-52">°</tspan></text>
-  <text x="208" y="385" class="value" id="cpuLoad">--%</text>
-  <text x="208" y="412" class="sub">USO</text>
+  <text x="200" y="226" class="label">CPU</text>
+  <text x="200" y="348" class="temp" id="cpuTemp">--<tspan class="deg" dy="-68">°</tspan></text>
+  <text x="200" y="414" class="value" id="cpuLoad">--%</text>
+  <text x="200" y="442" class="sub">USO</text>
 
-  <text x="432" y="205" class="label" fill="var(--gpu)">GPU</text>
-  <text x="432" y="322" class="temp" id="gpuTemp">--<tspan class="deg" dy="-52">°</tspan></text>
-  <text x="432" y="385" class="value" id="gpuLoad">--%</text>
-  <text x="432" y="412" class="sub">USO</text>
+  <text x="440" y="226" class="label">GPU</text>
+  <text x="440" y="348" class="temp" id="gpuTemp">--<tspan class="deg" dy="-68">°</tspan></text>
+  <text x="440" y="414" class="value" id="gpuLoad">--%</text>
+  <text x="440" y="442" class="sub">USO</text>
 
-  <text x="200" y="468" class="label" fill="var(--ram)" style="text-anchor:start">RAM</text>
-  <text x="440" y="468" class="value" id="ramTxt" style="font-size:26px;text-anchor:end">-- / -- GB</text>
-  <rect x="200" y="482" width="240" height="14" rx="7" fill="var(--track)"/>
-  <rect x="200" y="482" width="0" height="14" rx="7" fill="url(#ramGrad)" id="ramBar"/>
-  <text x="320" y="540" class="value" id="ramPct" style="font-size:34px">--%</text>
+  <text x="178" y="500" class="label" style="text-anchor:start">RAM</text>
+  <text x="462" y="500" class="value" id="ramPct" style="font-size:46px;text-anchor:end">--%</text>
+  <rect x="178" y="514" width="284" height="24" rx="12" fill="var(--track)"/>
+  <rect x="178" y="514" width="0" height="24" rx="12" fill="var(--ram)" id="ramBar"/>
+  <text x="320" y="574" class="sub" id="ramTxt" style="font-size:28px;letter-spacing:.04em">-- / -- GB</text>
 </svg>
 
 <script>
@@ -91,7 +85,7 @@
   };
   const ORANGE = "#fb923c", RED = "#ef4444";
 
-  const C = 320, R = 292;
+  const C = 320, R = 290;
   const SPAN = { cpu: [200, 340], gpu: [160, 20] };
 
   const $ = id => document.getElementById(id);
@@ -114,6 +108,8 @@
     $(k + "Arc").setAttribute("d", d);
   }
 
+  const fill = (k, f) => $(k + "Arc").setAttribute("stroke-dasharray", `${(clamp(f, 0, 1) * 100).toFixed(1)} 100`);
+
   function setTemp(k, t) {
     const el = $(k + "Temp");
     el.firstChild.nodeValue = ok(t) ? Math.round(t) : "--";
@@ -121,17 +117,16 @@
   }
 
   function setLoad(k, l) {
-    const pct = ok(l) ? clamp(l * 100, 0, 100) : 0;
-    $(k + "Load").textContent = ok(l) ? Math.round(pct) + "%" : "--%";
-    $(k + "Arc").setAttribute("stroke-dasharray", `${pct.toFixed(1)} 100`);
+    $(k + "Load").textContent = ok(l) ? Math.round(clamp(l, 0, 1) * 100) + "%" : "--%";
+    fill(k, ok(l) ? l : 0);
   }
 
   function setRam(ram) {
     if (!ram || !ok(ram.inUse) || !(ram.totalSize > 0)) return;
     const f = clamp(ram.inUse / ram.totalSize, 0, 1);
-    $("ramTxt").textContent = `${(ram.inUse / 1024).toFixed(1)} / ${Math.round(ram.totalSize / 1024)} GB`;
-    $("ramBar").setAttribute("width", (240 * f).toFixed(1));
     $("ramPct").textContent = Math.round(f * 100) + "%";
+    $("ramTxt").textContent = `${(ram.inUse / 1024).toFixed(1)} / ${Math.round(ram.totalSize / 1024)} GB`;
+    $("ramBar").setAttribute("width", (284 * f).toFixed(1));
   }
 
   function setLiquid(t) {
