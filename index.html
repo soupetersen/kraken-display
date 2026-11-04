@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kraken Display</title>
+<style>
+  :root {
+    --cpu: #38bdf8;
+    --gpu: #a78bfa;
+    --ram: #34d399;
+    --track: rgba(255,255,255,0.07);
+    --text: #f1f5f9;
+    --muted: #64748b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+  body {
+    font-family: Bahnschrift, "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  #screen { width: 100vw; height: 100vh; display: block; }
+  body.preview {
+    display: flex; align-items: center; justify-content: center;
+    background: #111418;
+  }
+  body.preview #screen {
+    width: min(640px, 90vw, 90vh); height: min(640px, 90vw, 90vh);
+    border-radius: 50%;
+    box-shadow: 0 0 0 14px #1d2127, 0 0 0 16px #2a2f37, 0 20px 60px rgba(0,0,0,.6);
+  }
+  .arc { fill: none; stroke-linecap: round; transition: stroke-dasharray .9s ease; }
+  .track { fill: none; stroke: var(--track); stroke-linecap: round; }
+  .label { font-size: 30px; font-weight: 600; letter-spacing: .18em; text-anchor: middle; }
+  .temp { font-size: 128px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
+  .deg { font-size: 56px; font-weight: 400; }
+  .value { font-size: 44px; font-weight: 600; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
+  .sub { font-size: 18px; letter-spacing: .2em; text-anchor: middle; fill: var(--muted); }
+  #ramBar { transition: width .9s ease; }
+</style>
+</head>
+<body>
+<svg id="screen" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#0f1724"/>
+      <stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <linearGradient id="ramGrad" x1="0" x2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#bg)"/>
+
+  <path id="cpuTrack" class="track" stroke-width="22"/>
+  <path id="gpuTrack" class="track" stroke-width="22"/>
+  <path id="cpuArc" class="arc" stroke="var(--cpu)" stroke-width="22" pathLength="100" stroke-dasharray="0 100"/>
+  <path id="gpuArc" class="arc" stroke="var(--gpu)" stroke-width="22" pathLength="100" stroke-dasharray="0 100"/>
+
+  <path d="M 254 88 C 254 88 245 99 245 105 A 9 9 0 0 0 263 105 C 263 99 254 88 254 88 Z" fill="#94a3b8"/>
+  <text x="326" y="108" class="sub" fill="#94a3b8" style="fill:#94a3b8">LÍQUIDO</text>
+  <text x="320" y="154" class="value" id="liqTemp" style="font-size:46px">--°</text>
+
+  <line x1="320" y1="190" x2="320" y2="395" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+
+  <text x="208" y="205" class="label" fill="var(--cpu)">CPU</text>
+  <text x="208" y="322" class="temp" id="cpuTemp">--<tspan class="deg" dy="-52">°</tspan></text>
+  <text x="208" y="385" class="value" id="cpuLoad">--%</text>
+  <text x="208" y="412" class="sub">USO</text>
+
+  <text x="432" y="205" class="label" fill="var(--gpu)">GPU</text>
+  <text x="432" y="322" class="temp" id="gpuTemp">--<tspan class="deg" dy="-52">°</tspan></text>
+  <text x="432" y="385" class="value" id="gpuLoad">--%</text>
+  <text x="432" y="412" class="sub">USO</text>
+
+  <text x="200" y="468" class="label" fill="var(--ram)" style="text-anchor:start">RAM</text>
+  <text x="440" y="468" class="value" id="ramTxt" style="font-size:26px;text-anchor:end">-- / -- GB</text>
+  <rect x="200" y="482" width="240" height="14" rx="7" fill="var(--track)"/>
+  <rect x="200" y="482" width="0" height="14" rx="7" fill="url(#ramGrad)" id="ramBar"/>
+  <text x="320" y="540" class="value" id="ramPct" style="font-size:34px">--%</text>
+</svg>
+
+<script>
+(() => {
+  const ALERT = {
+    cpu: [80, 90],
+    gpu: [80, 88],
+    liquid: [38, 42],
+  };
+  const ORANGE = "#fb923c", RED = "#ef4444";
+
+  const C = 320, R = 292;
+  const SPAN = { cpu: [200, 340], gpu: [160, 20] };
+
+  const $ = id => document.getElementById(id);
+  const ok = v => typeof v === "number" && isFinite(v);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const alertColor = (t, [warn, crit]) => t >= crit ? RED : t >= warn ? ORANGE : "";
+
+  const point = deg => {
+    const a = (deg - 90) * Math.PI / 180;
+    return [C + R * Math.cos(a), C + R * Math.sin(a)].map(n => n.toFixed(2));
+  };
+  const arcPath = (a0, a1) => {
+    const [x0, y0] = point(a0), [x1, y1] = point(a1);
+    return `M ${x0} ${y0} A ${R} ${R} 0 0 ${a1 > a0 ? 1 : 0} ${x1} ${y1}`;
+  };
+
+  for (const k of ["cpu", "gpu"]) {
+    const d = arcPath(...SPAN[k]);
+    $(k + "Track").setAttribute("d", d);
+    $(k + "Arc").setAttribute("d", d);
+  }
+
+  function setTemp(k, t) {
+    const el = $(k + "Temp");
+    el.firstChild.nodeValue = ok(t) ? Math.round(t) : "--";
+    el.style.fill = ok(t) ? alertColor(t, ALERT[k]) : "";
+  }
+
+  function setLoad(k, l) {
+    const pct = ok(l) ? clamp(l * 100, 0, 100) : 0;
+    $(k + "Load").textContent = ok(l) ? Math.round(pct) + "%" : "--%";
+    $(k + "Arc").setAttribute("stroke-dasharray", `${pct.toFixed(1)} 100`);
+  }
+
+  function setRam(ram) {
+    if (!ram || !ok(ram.inUse) || !(ram.totalSize > 0)) return;
+    const f = clamp(ram.inUse / ram.totalSize, 0, 1);
+    $("ramTxt").textContent = `${(ram.inUse / 1024).toFixed(1)} / ${Math.round(ram.totalSize / 1024)} GB`;
+    $("ramBar").setAttribute("width", (240 * f).toFixed(1));
+    $("ramPct").textContent = Math.round(f * 100) + "%";
+  }
+
+  function setLiquid(t) {
+    const el = $("liqTemp");
+    el.textContent = ok(t) ? t.toFixed(1) + "°" : "--°";
+    el.style.fill = ok(t) ? alertColor(t, ALERT.liquid) : "";
+  }
+
+  function pickGpu(gpus = []) {
+    return gpus.find(g => /nvidia|geforce|rtx|gtx|radeon rx|arc [ab]/i.test(g.name || "") && ok(g.temperature))
+        || gpus.find(g => ok(g.temperature))
+        || gpus[0] || {};
+  }
+
+  function render(data) {
+    const cpu = (data.cpus || [])[0] || {};
+    const gpu = pickGpu(data.gpus);
+    setTemp("cpu", cpu.temperature);
+    setLoad("cpu", cpu.load);
+    setTemp("gpu", gpu.temperature);
+    setLoad("gpu", gpu.load);
+    setRam(data.ram);
+    setLiquid(data.kraken && data.kraken.liquidTemperature);
+  }
+
+  let live = false;
+  window.nzxt = window.nzxt || {};
+  window.nzxt.v1 = Object.assign(window.nzxt.v1 || {}, {
+    onMonitoringDataUpdate: data => { live = true; render(data); },
+  });
+
+  if (new URLSearchParams(location.search).get("kraken") !== "1") {
+    document.body.classList.add("preview");
+  }
+
+  setTimeout(() => {
+    if (live) return;
+    const s = { ct: 48, cl: .22, gt: 55, gl: .35, ram: 14500, liq: 31 };
+    const walk = (v, step, lo, hi) => clamp(v + (Math.random() - .5) * step, lo, hi);
+    const tick = () => {
+      if (live) return;
+      s.cl = walk(s.cl, .25, .03, 1);
+      s.gl = walk(s.gl, .3, .02, 1);
+      s.ct = walk(s.ct + (s.cl * 45 + 38 - s.ct) * .15, 3, 32, 95);
+      s.gt = walk(s.gt + (s.gl * 40 + 40 - s.gt) * .15, 3, 32, 90);
+      s.ram = walk(s.ram, 900, 8000, 30000);
+      s.liq = walk(s.liq + (28 + s.cl * 10 - s.liq) * .05, .3, 25, 45);
+      render({
+        cpus: [{ temperature: s.ct, load: s.cl }],
+        gpus: [{ name: "GeForce", temperature: s.gt, load: s.gl }],
+        ram: { inUse: s.ram, totalSize: 32768 },
+        kraken: { liquidTemperature: s.liq },
+      });
+    };
+    tick();
+    setInterval(tick, 1000);
+  }, 1500);
+})();
+</script>
+</body>
+</html>
