@@ -12,8 +12,8 @@
     --gpu: #a78bfa;
     --ram: #34d399;
     --track: rgba(255,255,255,0.08);
-    --text: #ffffff;
-    --muted: #ffffff;
+    --text: #f1f5f9;
+    --muted: #8391a7;
     --font: Oxanium, Bahnschrift, "Segoe UI", system-ui, sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,7 +36,7 @@
   text { font-family: var(--font); }
   .arc { fill: none; stroke-linecap: round; transition: stroke-dasharray .9s ease; }
   .track { fill: none; stroke: var(--track); stroke-linecap: round; }
-  .label { font-size: 38px; font-weight: 700; fill: var(--text); letter-spacing: .14em; text-anchor: middle; }
+  .label { font-size: 38px; font-weight: 700; letter-spacing: .14em; text-anchor: middle; }
   .temp { font-size: 150px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
   .deg { font-size: 46px; font-weight: 500; }
   .value { font-size: 58px; font-weight: 700; text-anchor: middle; fill: var(--text); transition: fill .9s ease; }
@@ -46,7 +46,13 @@
 </head>
 <body>
 <svg id="screen" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
-  <rect width="640" height="640" fill="#000"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#0f1724"/>
+      <stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#bg)"/>
 
   <path id="cpuTrack" class="track" stroke-width="26"/>
   <path id="gpuTrack" class="track" stroke-width="26"/>
@@ -59,21 +65,21 @@
 
   <line x1="320" y1="200" x2="320" y2="440" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
 
-  <text x="200" y="226" class="label">CPU</text>
+  <text x="200" y="226" class="label" fill="var(--cpu)">CPU</text>
   <text x="200" y="348" class="temp" id="cpuTemp">--<tspan class="deg" dy="-68">°</tspan></text>
   <text x="200" y="414" class="value" id="cpuLoad">--%</text>
   <text x="200" y="442" class="sub">USO</text>
 
-  <text x="440" y="226" class="label">GPU</text>
+  <text x="440" y="226" class="label" fill="var(--gpu)">GPU</text>
   <text x="440" y="348" class="temp" id="gpuTemp">--<tspan class="deg" dy="-68">°</tspan></text>
   <text x="440" y="414" class="value" id="gpuLoad">--%</text>
   <text x="440" y="442" class="sub">USO</text>
 
-  <text x="178" y="500" class="label" style="text-anchor:start">RAM</text>
-  <text x="462" y="500" class="value" id="ramPct" style="font-size:46px;text-anchor:end">--%</text>
+  <text x="178" y="500" class="label" fill="var(--ram)" style="text-anchor:start">RAM</text>
+  <text x="462" y="500" class="value" id="ramTxt" style="font-size:28px;font-weight:500;text-anchor:end">-- / -- GB</text>
   <rect x="178" y="514" width="284" height="24" rx="12" fill="var(--track)"/>
   <rect x="178" y="514" width="0" height="24" rx="12" fill="var(--ram)" id="ramBar"/>
-  <text x="320" y="574" class="sub" id="ramTxt" style="font-size:28px;letter-spacing:.04em">-- / -- GB</text>
+  <text x="320" y="582" class="value" id="ramPct" style="font-size:48px">--%</text>
 </svg>
 
 <script>
